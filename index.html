@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII DOOM - Raycasting Engine</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="title">
+            <pre>
+██████╗  ██████╗  ██████╗ ███╗   ███╗
+██╔══██╗██╔═══██╗██╔═══██╗████╗ ████║
+██║  ██║██║   ██║██║   ██║██╔████╔██║
+██║  ██║██║   ██║██║   ██║██║╚██╔╝██║
+██████╔╝╚██████╔╝╚██████╔╝██║ ╚═╝ ██║
+╚═════╝  ╚═════╝  ╚═════╝ ╚═╝     ╚═╝
+
+     █████╗ ███████╗ ██████╗██╗██╗
+    ██╔══██╗██╔════╝██╔════╝██║██║
+    ███████║███████╗██║     ██║██║
+    ██╔══██║╚════██║██║     ██║██║
+    ██║  ██║███████║╚██████╗██║██║
+    ╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝╚═╝
+</pre>
+        </div>
+        <div id="screen"></div>
+        <div class="hud">
+            <div class="hud-item">
+                <span class="hud-label">HEALTH:</span>
+                <span id="health">100%</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">ARMOR:</span>
+                <span id="armor">50%</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">AMMO:</span>
+                <span id="ammo">50</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="minimap-container">
+        <div class="minimap-title">[ MAPA ]</div>
+        <div id="minimap"></div>
+    </div>
+
+    <div class="weapon" id="weapon"></div>
+
+    <div class="controls">
+        <span>W A S D</span> - Mover | <span>← mouse →</span> - Rotar | <span>Click Izquierdo</span> - Disparar
+    </div>
+
+    <script src="js/game.js"></script>
+
+</body>
+
+</html>
