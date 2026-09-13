@@ -5,8 +5,9 @@ const FOV = 1.40; // 60 grados
 const MAX_DEPTH = 16;
 
 // Caracteres de sombreado por distancia (de cerca a lejos)
-const WALL_SHADES = ['█', '▓', '▒', '░', '·', ' '];
-const FLOOR_SHADES = ['#', 'x', '-', '.', ' '];
+const WALL_SHADES = ['█', '▓', '▒', '░', '≡', '=', '-', '·', ' '];
+const WALL_SHADES_DARK = ['▓', '▒', '░', '≡', '=', '-', '·', ' ', ' '];
+const FLOOR_SHADES = ['#', 'x', '+', '=', '-', '.', ' '];
 const CEILING_CHAR = ' ';
 
 // ============ MAPA DEL NIVEL ============
@@ -103,77 +104,94 @@ function castRays() {
         // Calcular ángulo del rayo
         const rayAngle = (player.angle - FOV / 2) + (x / SCREEN_WIDTH) * FOV;
 
-        // Raycasting - DDA Algorithm simplificado
+        // DDA Algorithm
         let distanceToWall = 0;
         let hitWall = false;
-        let hitBoundary = false;
+        let side = 0; // 0 para paredes Este/Oeste (corte en eje X), 1 para Norte/Sur (corte en eje Y)
 
         const eyeX = Math.cos(rayAngle);
         const eyeY = Math.sin(rayAngle);
 
+        let mapX = Math.floor(player.x);
+        let mapY = Math.floor(player.y);
+
+        // Distancia para cruzar una celda
+        const deltaDistX = Math.abs(1 / eyeX);
+        const deltaDistY = Math.abs(1 / eyeY);
+
+        let stepX, stepY;
+        let sideDistX, sideDistY;
+
+        // Calcular paso y distancia inicial
+        if (eyeX < 0) {
+            stepX = -1;
+            sideDistX = (player.x - mapX) * deltaDistX;
+        } else {
+            stepX = 1;
+            sideDistX = (mapX + 1.0 - player.x) * deltaDistX;
+        }
+
+        if (eyeY < 0) {
+            stepY = -1;
+            sideDistY = (player.y - mapY) * deltaDistY;
+        } else {
+            stepY = 1;
+            sideDistY = (mapY + 1.0 - player.y) * deltaDistY;
+        }
+
+        // Bucle principal DDA
         while (!hitWall && distanceToWall < MAX_DEPTH) {
-            distanceToWall += 0.05;
+            if (sideDistX < sideDistY) {
+                sideDistX += deltaDistX;
+                mapX += stepX;
+                side = 0;
+            } else {
+                sideDistY += deltaDistY;
+                mapY += stepY;
+                side = 1;
+            }
 
-            const testX = Math.floor(player.x + eyeX * distanceToWall);
-            const testY = Math.floor(player.y + eyeY * distanceToWall);
-
-            // Verificar límites del mapa
-            if (testX < 0 || testX >= MAP_WIDTH || testY < 0 || testY >= MAP_HEIGHT) {
+            if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) {
                 hitWall = true;
                 distanceToWall = MAX_DEPTH;
-            } else {
-                // Verificar si hay pared
-                if (MAP[testY][testX] === '#') {
-                    hitWall = true;
-
-                    // Detectar bordes de la pared para efecto visual
-                    const bounds = [];
-                    for (let tx = 0; tx < 2; tx++) {
-                        for (let ty = 0; ty < 2; ty++) {
-                            const vx = testX + tx - player.x;
-                            const vy = testY + ty - player.y;
-                            const d = Math.sqrt(vx * vx + vy * vy);
-                            const dot = (eyeX * vx / d) + (eyeY * vy / d);
-                            bounds.push([d, dot]);
-                        }
-                    }
-                    bounds.sort((a, b) => a[0] - b[0]);
-
-                    const bound = 0.01;
-                    if (Math.acos(bounds[0][1]) < bound ||
-                        Math.acos(bounds[1][1]) < bound) {
-                        hitBoundary = true;
-                    }
-                }
+            } else if (MAP[mapY][mapX] === '#') {
+                hitWall = true;
             }
         }
+
+        // Calcular distancia proyectada (distancia euclidiana)
+        if (side === 0) {
+            distanceToWall = (mapX - player.x + (1 - stepX) / 2) / eyeX;
+        } else {
+            distanceToWall = (mapY - player.y + (1 - stepY) / 2) / eyeY;
+        }
+
+        // Corrección del efecto ojo de pez (fisheye)
+        distanceToWall *= Math.cos(rayAngle - player.angle);
+
+        // Evitar división por cero
+        if (distanceToWall <= 0.1) distanceToWall = 0.1;
 
         // Calcular altura de la pared en pantalla
         const ceiling = Math.floor((SCREEN_HEIGHT / 2) - (SCREEN_HEIGHT / distanceToWall));
         const floor = SCREEN_HEIGHT - ceiling;
 
-        // Seleccionar carácter de sombreado según distancia
-        let wallShade;
-        if (hitBoundary) {
-            wallShade = '│'; // Borde de pared
-        } else {
-            const shadeIndex = Math.min(
-                Math.floor((distanceToWall / MAX_DEPTH) * WALL_SHADES.length),
-                WALL_SHADES.length - 1
-            );
-            wallShade = WALL_SHADES[shadeIndex];
-        }
+        // Seleccionar paleta dependiendo del lado golpeado para simular iluminación direccional
+        const activePalette = (side === 1) ? WALL_SHADES_DARK : WALL_SHADES;
+
+        const shadeIndex = Math.min(
+            Math.floor((distanceToWall / MAX_DEPTH) * activePalette.length),
+            activePalette.length - 1
+        );
+        const wallShade = activePalette[shadeIndex];
 
         // Dibujar columna
         for (let y = 0; y < SCREEN_HEIGHT; y++) {
             if (y < ceiling) {
-                // Techo
                 buffer[y][x] = CEILING_CHAR;
             } else if (y >= ceiling && y < floor) {
-                // Pared
                 buffer[y][x] = wallShade;
             } else {
-                // Suelo
                 const floorDist = 1 - ((y - SCREEN_HEIGHT / 2) / (SCREEN_HEIGHT / 2));
                 const floorShadeIndex = Math.min(
                     Math.floor(floorDist * FLOOR_SHADES.length),
