@@ -1,6 +1,6 @@
 # ASCII DOOM
 
-Un pequeño FPS inspirado en Doom desarrollado con JavaScript puro utilizando técnicas de raycasting y renderizado ASCII en el navegador.
+Un pequeño FPS inspirado en Doom desarrollado con JavaScript vanilla utilizando técnicas de raycasting y renderizado ASCII en el navegador.
 
 
 ## Características
